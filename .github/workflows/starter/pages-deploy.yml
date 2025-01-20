@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
@@ -35,18 +35,21 @@ jobs:
         id: pages
         uses: actions/configure-pages@v4
 
-      - name: Install Ruby 3.3.5
+      - name: Install Dependencies
         run: |
-          # Install dependencies for Ruby
           sudo apt-get update
-          sudo apt-get install -y libssl-dev libreadline-dev zlib1g-dev
+          sudo apt-get install -y libssl-dev libreadline-dev zlib1g-dev curl
 
-          # Install ruby-build and Ruby 3.3.5
+      - name: Install Ruby 3.2.2 using ruby-build
+        run: |
+          # Install ruby-build
           curl -sL https://github.com/rbenv/ruby-build/archive/v20230125.tar.gz | tar xz
           cd ruby-build-20230125
           sudo ./install.sh
-          rbenv install 3.3.5
-          rbenv global 3.3.5
+
+          # Install Ruby 3.2.2
+          rbenv install 3.2.2
+          rbenv global 3.2.2
 
       - name: Build site
         run: bundle exec jekyll build -d "_site${{ steps.pages.outputs.base_path }}"
