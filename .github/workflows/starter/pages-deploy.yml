@@ -4,23 +4,11 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - .gitignore
-      - README.md
-      - LICENSE
-
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
   id-token: write
-
-# Allow one concurrent deployment
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
 
 jobs:
   build:
@@ -32,18 +20,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Pages
-        id: pages
-        uses: actions/configure-pages@v5
+      - name: Install Ruby
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev libreadline-dev zlib1g-dev
+          curl -sSL https://github.com/rbenv/ruby-build/archive/master.tar.gz | tar xz -C /tmp
+          sudo /tmp/ruby-build-master/bin/ruby-build 3.2.2 /opt/hostedtoolcache/Ruby/3.2.2/x64
+          sudo touch /opt/hostedtoolcache/Ruby/3.2.2/x64.complete
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v2  # 최신 버전으로 변경
-        with:
-          ruby-version: 3.3.5
-          bundler-cache: true
+      - name: Setup Bundler
+        run: gem install bundler
 
       - name: Build site
-        run: bundle exec jekyll build -d _site  # base_path 제거
+        run: |
+          bundle install
+          bundle exec jekyll build -d _site
         env:
           JEKYLL_ENV: "production"
 
@@ -67,4 +58,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v3  # 안정적인 버전으로 변경
+        uses: actions/deploy-pages@v3
