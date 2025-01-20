@@ -23,55 +23,37 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # submodules: true
+          # If using the 'assets' git submodule from Chirpy Starter, uncomment above
+          # (See: https://github.com/cotes2020/chirpy-starter/tree/main/assets)
 
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v4
 
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libssl-dev libreadline-dev zlib1g-dev curl git
-
-      - name: Install rbenv and ruby-build
-        run: |
-          # Install rbenv dependencies
-          sudo apt-get install -y libssl-dev libreadline-dev zlib1g-dev
-
-          # Install rbenv
-          git clone https://github.com/rbenv/rbenv.git ~/.rbenv
-          echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bashrc
-          echo 'eval "$(rbenv init -)"' >> ~/.bashrc
-          source ~/.bashrc
-
-          # Install ruby-build as an rbenv plugin
-          git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
-
-          # Install Ruby 3.2.2
-          rbenv install 3.2.2
-          rbenv global 3.2.2
-
-      - name: Install Bundler
-        run: |
-          gem install bundler
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3.5
+          bundler-cache: true
 
       - name: Build site
-        run: bundle exec jekyll build -d "_site${{ steps.pages.outputs.base_path }}"
+        run: bundle exec jekyll b -d "_site${{ steps.pages.outputs.base_path }}"
         env:
           JEKYLL_ENV: "production"
 
       - name: Test site
         run: |
           bundle exec htmlproofer _site \
-            --disable-external \
-            --ignore-urls "/^http:\/\/127.0.0.1/,/^http:\/\/0.0.0.0/,/^http:\/\/localhost/"
+            \-\-disable-external \
+            \-\-ignore-urls "/^http:\/\/127.0.0.1/,/^http:\/\/0.0.0.0/,/^http:\/\/localhost/"
 
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
