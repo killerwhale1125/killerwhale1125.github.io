@@ -38,16 +38,16 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libssl-dev libreadline-dev zlib1g-dev curl
+          sudo apt-get install -y libssl-dev libreadline-dev zlib1g-dev curl git
 
       - name: Install Ruby 3.2.2 using ruby-build
         run: |
-          # Install ruby-build
+          # Install ruby-build dependencies
           curl -sL https://github.com/rbenv/ruby-build/archive/v20230125.tar.gz | tar xz
           cd ruby-build-20230125
           sudo ./install.sh
 
-          # Install Ruby 3.2.2 using ruby-build
+          # Install Ruby 3.2.2
           rbenv install 3.2.2
           rbenv global 3.2.2
 
@@ -68,15 +68,4 @@ jobs:
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "_site${{ steps.pages.outputs.base_path }}"
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          path: "_site${{ steps.pages.outputs.base
