@@ -47,9 +47,12 @@ jobs:
           cd ruby-build-20230125
           sudo ./install.sh
 
-          # Install Ruby 3.2.2
+          # Install Ruby 3.2.2 using ruby-build
           rbenv install 3.2.2
           rbenv global 3.2.2
+
+      - name: Install Bundler
+        run: gem install bundler
 
       - name: Build site
         run: bundle exec jekyll build -d "_site${{ steps.pages.outputs.base_path }}"
