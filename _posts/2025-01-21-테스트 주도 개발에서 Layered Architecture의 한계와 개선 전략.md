@@ -1,5 +1,5 @@
 ---
-title: JPA Test 문제점과 헥사고날 아키텍쳐 개선 및 단점
+title: JPA Test 문제점과 헥사고날 아키텍쳐 개선 및 장단점
 description: 
 author: killer whale
 date: 2025-01-21 14:10:00 +0800
