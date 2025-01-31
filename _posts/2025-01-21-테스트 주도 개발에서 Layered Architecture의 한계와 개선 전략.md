@@ -1,5 +1,5 @@
 ---
-title: Test에 대한 문제점과 Architecture 개선
+title: JPA Test 문제점과 헥사고날 아키텍쳐 개선 및 단점
 description: 
 author: killer whale
 date: 2025-01-21 14:10:00 +0800
@@ -34,7 +34,12 @@ public void orderDetail() {
 
 <br/>
 이 중 가장 중요하게 생각하는 것은 테스트의 일관성이라고 생각합니다. 테스트 일관성이 없다면 테스트가 실패하거나 통과하는 결과가 반복될 수 없기 때문입니다.<br/>
-이번 게시글에서는 **`테스트 일관성이 프로젝트에 미치는 영향과 테스트 설계 및 아키텍처 개선 방안에 대해 다루어 보겠습니다.`**
+이번 게시글에서는 **`테스트 일관성을 위하여 기존 테스트 방식에는 어떠한 문제점이 있으며 Architecture 개선 방안을 찾고 그에 대한 장점을 적어보고자 합니다.`**
+
+<br/>
+
+> **개선 될 아키텍쳐를 위하여 기존 방식의 문제점을 주로 설명하겠지만 꼭 잘못되었다고 생각은 하지 않습니다. 주관적인 생각이 포함되어 있습니다.**
+{: .prompt-tip }
 
 <br/>
 
@@ -177,6 +182,10 @@ Order가 OrderDomain으로 변화한 것뿐만 아니라, **@SpringBootTest를 �
 
 ![Untitled](https://killerwhale1125.github.io/assets/img/post/springboot.png)
 
+### 실제 적용 사례
+제가 진행했던 프로젝트에서 헥사고날 아키텍처를 도입한 이후, 데이터베이스에 의존하지 않는 테스트를 작성함으로써 테스트 속도가 60% 이상 향상되었으며, 테스트 실패율도 크게 줄어들었습니다.  
+특히, 새로운 기능 개발 시 빠르게 Mock Repository를 생성하여 테스트 주도 개발(TDD)의 효율성을 극대화할 수 있었습니다.
+
 <br/>
 
 **테스트 시 서비스에서 순수 도메인 객체를 사용하면, DB 연결은 어떻게 해결하나요?**
@@ -231,14 +240,154 @@ class TestOrderRepositoryImpl implements OrderRepository {
 
 **이러한 아키텍쳐 구조가 과연 테스트에만 효과적일까?**
 
+![Untitled](https://killerwhale1125.github.io/assets/img/post/usecase-other.png)
+
 어떠한 스타트업에서 기존 Layered 아키텍쳐를 사용하여 JPA에 맞춰 설계를 진행했다고 가정해봅시다. 
 이 때 JPA는 더 이상 업데이트나 지원을 안하게 되어 다른 방식의 영속성 레이어를 구현해야 한다면 어떨까요?
 기존의 아키텍쳐를 사용한다면 영속성 레이어 뿐만 아니라 비즈니스 레이어마저 모든 코드를 뜯어 고쳐야 하는 상황이 발생합니다.
 하지만 헥사고날 아키텍쳐와 같이 외부의 Input, Ouput을 잘 분리하여 설계했다면 비즈니스 레이어는 변함이 없으며 영속성 레이어만 수정하면 되겠죠.
 
 또한 Spring을 안쓴다 해도 비즈니스 레이어는 전혀 변함이 없습니다.
-이처럼 이러한 아키텍쳐가 서비스에 얼마나 영향을 많이 주는지 알아보았습니다.
 
-다음 게시글로서 JPA와 헥사고날 아키텍쳐를 도입하여 프로젝트를 진행하며 겪었던 단점이라 생각되는 개인적인 견해를 적어보았습니다.
+<br/>
 
-긴글 읽어주셔서 감사드립니다.
+## JPA 사용과 헥사고날 아키텍처 도입 시 발생하는 문제점
+
+<br/>
+헥사고날 아키텍처를 도입하면서 JPA의 주요 기능 중 일부를 활용하기 어려워지는 문제가 발생할 수 있습니다. 
+이번 글에서는 Dirty Checking과 Cascade와 관련된 문제를 중심으로 이를 분석하고, 이러한 불편함에도 불구하고 헥사고날 아키텍처를 도입해야 하는 이유를 살펴보겠습니다.
+<br/>
+
+**1. JPA의 편리함을 일부 포기해야한다. ( Dirty Checking )**
+
+JPA에서는 엔티티를 영속성 컨텍스트에서 관리하며, Dirty Checking을 통해 엔티티의 변경 사항을 자동으로 감지하고 데이터베이스에 반영합니다. 
+그러나 헥사고날 아키텍처를 도입하면 이를 포기해야 하는 상황이 발생합니다.
+
+**`Dirty Checking 활성화`**
+![Untitled](https://killerwhale1125.github.io/assets/img/post/dirty-checking.png)
+> 영속성 컨텍스트에서 관리하는 Entity를 수정하였기 때문에 Dirty Checking 발생
+
+<br/>
+도메인 객체를 다루지 않았더라면 기본적으로 JPA의 Dirty Checking 으로 인하여 자동으로 Update가 발생하였을 것 입니다.
+<br/>
+
+**`Dirty Checking 비활성화`**
+![Untitled](https://killerwhale1125.github.io/assets/img/post/not-dirtychecking.png)
+> 도메인을 수정하였기 때문에 Dirty Checking 발생하지 않는다.
+
+헥사고날 아키텍처에서는 SRP(단일 책임 원칙)를 준수하기 위해 Repository가 데이터베이스 접근만을 담당합니다. 
+따라서 Repository에서 Service로 데이터를 전달할 때 Entity를 DTO로 변환해야 합니다.
+
+그런데 Service 단에서 DTO를 수정해도 이는 영속성 컨텍스트에서 관리되는 엔티티가 아니기 때문에 Dirty Checking이 동작하지 않습니다.
+아래는 관련 코드 예제입니다.
+
+```java
+@Override
+public UserResponse update(UserUpdate userUpdate, MultipartFile file, String username) {
+    UserDomain user = userRepository.findByUsernameWithImage(username);
+    ImageDomain image = file.isEmpty() ? user.getImage(): uploadImage(file, user.getProfile());
+    user = user.update(userUpdate, image, passwordEncoder);
+  
+    UserDomain saveUser = userRepository.save(user);
+    String accessToken = generateTokenAll(username);
+  
+    return UserResponse.fromEntity(saveUser, accessToken);
+}
+```
+
+위 코드를 보면, user.update()로 도메인 객체를 수정했지만, Dirty Checking이 작동하지 않으므로 변경 사항을 수동으로 저장(userRepository.save())해야 합니다. 
+JPA의 Dirty Checking을 사용할 수 있다면, 저장을 명시적으로 호출하지 않아 도 됩니다.
+
+
+Dirty Checking 비활성화의 장단점
+- 단점
+수동으로 변경 사항을 저장해야 하므로 코드가 장황해지고 관리해야 할 부분이 증가합니다.
+
+- 장점
+데이터 변경이 어디서 이루어졌는지 명시적이고 직관적으로 알 수 있습니다. 이는 예상치 못한 데이터 수정으로 인한 문제를 예방할 수 있는 장점이 있습니다.
+
+
+**2. JPA의 Cascade 포기**
+
+문제 상황: Cascade 설정의 무력화
+JPA에서는 연관관계를 가지는 엔티티에 CascadeType.ALL을 설정하면 부모 엔티티를 영속화할 때 자식 엔티티도 자동으로 영속화됩니다.
+
+```java
+@Getter
+@Entity
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Gathering {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "gathering_id")
+    private Long id;
+
+    @OneToMany(mappedBy = "gathering", cascade = CascadeType.ALL)
+    private List<GatheringUser> gatheringUsers = new ArrayList<>();
+}
+```
+
+위와 같은 엔티티 구조에서는 아래와 같이 부모 엔티티를 저장하면서 자식 엔티티도 자동으로 저장됩니다.
+
+```java
+@Override
+@Transactional
+public void join(Long gatheringId, String userName) {
+    User user = userRepository.findByUsername(userName);
+
+    Gathering gathering = gatheringRepository.findByIdWithGatheringUsersAndChallenge(gatheringId);
+    gathering.join(user, gatheringValidator); // 부모와 자식 관계 설정
+
+    gatheringRepository.save(gathering); // Cascade를 통해 자식 엔티티도 영속화
+}
+```
+![Untitled](https://killerwhale1125.github.io/assets/img/post/hex-save.png)
+> 헥사고날 아키텍쳐 도입 시 save 과정
+
+하지만 헥사고날 아키텍처를 도입하면, Service에서는 도메인 객체를 사용하고 Repository에서 이를 엔티티로 변환해야 합니다. 
+이 과정에서 영속성 컨텍스트에서 관리하지 않는 비영속 상태의 엔티티를 사용하기 때문에 Cascade 설정이 무효화됩니다.
+
+
+```java
+@Override
+@Transactional
+public void join(Long gatheringId, String userName) {
+    UserDomain user = userRepository.findByUsername(userName);
+
+    GatheringDomain gathering = gatheringRepository.findByIdWithGatheringUsersAndChallenge(gatheringId);
+    gathering.join(user, gatheringValidator); // GatheringUser 추가
+
+    gatheringRepository.save(gathering); // 부모 저장
+    gatheringUserRepository.save(GatheringUserDomain.create(user, gathering)); // 자식 저장
+}
+```
+
+이처럼 부모-자식 간 저장이 분리되면서 모든 저장 작업을 명시적으로 처리해야 합니다.
+
+<br/>
+
+## JPA 의 편리함을 포기하면서 까지 헥사고날 아키텍쳐를 도입해야만 할까?
+
+<br/>
+**1. 명시적 코드로 인한 직관성 증가**
+<br/>
+
+헥사고날 아키텍처를 도입하면, Dirty Checking 및 Cascade 설정을 사용할 수 없어 추가적인 코드 작업이 필요합니다.
+하지만 이러한 명시적인 코드는 `데이터가 언제, 어디서, 어떻게 수정되었는지 직관적으로 이해할 수 있게 합니다.` 이는 유지보수성과 신뢰성을 증가시켜줍니다.
+<br/>
+
+**2. 영속성 전이에 대한 불안감 해소**
+<br/>
+
+Cascade를 사용하는 경우 `의도치 않게 데이터가 삭제되거나 저장되는 등의 문제가 발생`할 수 있습니다. 이를 명시적으로 처리하면 이러한 불안감을 해소할 수 있습니다.
+<br/>
+
+**3. 편리함 -> 명확함**
+<br/>
+
+JPA의 Dirty Checking과 Cascade는 매우 편리한 기능이지만, 헥사고날 아키텍처에서는 이를 포기해야 하는 경우가 종종 발생합니다.
+`그럼에도 불구하고 헥사고날 아키텍처의 명확한 코드 작성과 유지보수의 용이성은 충분히 이를 도입할 가치가 있습니다.`
+
+**결론적으로 헥사고날 아키텍처는 단순히 트렌드를 따르는 것이 아니라, 
+소프트웨어 설계의 원칙과 유지보수성을 극대화하기 위한 전략임을 명심해야 합니다.**
