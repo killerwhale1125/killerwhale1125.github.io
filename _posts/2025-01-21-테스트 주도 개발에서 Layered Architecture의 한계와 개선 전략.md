@@ -22,21 +22,19 @@ public void orderDetail() {
 }
 ```
 이 코드는 주문을 생성하고 조회하는 기능을 테스트하는 것입니다.<br/>
-그런데 이 테스트만으로 해당 기능이 정상적으로 작동한다고 보장할 수 있을까요?<br/>
+그런데 **`이 테스트만으로 해당 기능이 정상적으로 작동한다고 보장할 수 있을까요?`**<br/>
 우선, 테스트가 API의 작동을 보장해주는 조건을 생각해 보았습니다.
-<br/>
 
+<br/>
 **테스트가 보장해주는 조건**
 - 정확한 입력과 기대 결과
 - 다양한 시나리오 테스트
 - 데이터의 독립성
 - **테스트의 일관성**
 
-<br/>
-이 중 가장 중요하게 생각하는 것은 테스트의 일관성이라고 생각합니다. 테스트 일관성이 없다면 테스트가 실패하거나 통과하는 결과가 반복될 수 없기 때문입니다.<br/>
-이번 게시글에서는 **`테스트 일관성을 위하여 기존 테스트 방식에는 어떠한 문제점이 있으며 Architecture 개선 방안을 찾고 JPA와 같이 사용할 경우에 대한 장단점을 적어보고자 합니다.`**
+이 중 가장 중요하게 생각하는 것은 테스트의 일관성이라고 생각합니다. **`테스트 일관성이 없으면 동일한 코드가 실행될 때마다 다른 결과가 나올 수 있어 신뢰성이 떨어집니다.`**<br/>
 
-<br/>
+이번 게시글에서는 테스트 일관성을 위하여 기존 테스트 방식에는 어떠한 문제점이 있으며 Architecture 개선 방안을 찾고 JPA와 같이 사용할 경우에 대한 장단점을 적어보고자 합니다.
 
 > **개선 될 아키텍쳐를 위하여 기존 방식의 문제점을 주로 설명하겠지만 꼭 잘못되었다고 생각은 하지 않습니다. 주관적인 생각이 포함되어 있습니다.**
 {: .prompt-tip }
@@ -52,9 +50,10 @@ public void orderDetail() {
 - SpringBoot **(사용한다 가정)** 가 띄워져 있어야 한다.
 - 연결 가능한 DB가 존재해야 한다.
 
-**`즉, 테스트가 성공하려면 이 세 가지 조건이 반드시 충족되어야 합니다. 이를 간단히 그림으로 표현하면 다음과 같습니다.`**
+즉, 테스트가 성공하려면 이 세 가지 조건이 반드시 충족되어야 합니다. 이를 간단히 그림으로 표현하면 다음과 같습니다.
 
 ![Untitled](https://killerwhale1125.github.io/assets/img/post/springjpadb.png)
+> Spring Boot, JPA, DB 의존성을 가진 기존 아키텍쳐
 
 이러한 조건이 항상 안정적이라고 가정하고 테스트를 검증한다고 합시다. 
 하지만, 실제 운영 중인 프로젝트에서는 수백 개 이상의 테스트가 존재할 수 있으며, 이 테스트에는 다음과 같은 문제점이 있습니다.
@@ -63,10 +62,9 @@ public void orderDetail() {
 - H2와 같은 DB를 띄워야 한다.
 - 어제는 성공했지만 오늘은 실패하는 문제가 발생할 수 있다.
 
-<br/>
-알 수 없는 외부 라이브러리의 오류로 인해 잘 작동하던 코드가 회귀 버그를 유발한다면, **`문제가 없는 코드를 디버깅하는 데 시간을 낭비하게 되고, 
-개발의 안정성과 빠른 개발 속도를 위해 작성한 테스트 코드가 오히려 짐이 되는 상황이 발생합니다.`**
-<br/>
+알 수 없는 외부 라이브러리의 오류로 인해 잘 작동하던 코드가 회귀 버그를 유발한다면, **문제가 없는 코드를 디버깅하는 데 시간을 낭비하게 되고, 
+개발의 안정성과 빠른 개발 속도를 위해 작성한 테스트 코드가 오히려 짐이 되는 상황이 발생합니다.**
+
 실제로, 저 역시 회사에서 새로운 API 개발로 인해 발생한 회귀 버그 때문에 코드를 배포하는 것이 무서웠던 경험이 있습니다.
 
 <br/>
@@ -89,7 +87,8 @@ TDD를 도입하면, **DIP(Dependency Inversion Principle)** 를 통해 인터�
 {: .prompt-tip }
 
 즉 TDD가 우리에게 전달하고자 하는 것은 외부 의존을 줄이라는 것인데, DIP로 Interface같은 고수준 정책에 의존하여 유연한 설계를 가져간다 해도  **결국 DB에서 데이터를 가져와야 하는 문제는 변함이 없습니다.**<br/>
-ElasticSearch와 같은 데이터베이스를 사용하는 경우, 우리는 어떻게 테스트해야 할까요? 결국, 테스트는 데이터베이스와 불가분의 관계인 것처럼 보입니다.
+
+ElasticSearch와 같은 데이터베이스를 사용하는 경우, 어떻게 테스트해야 할까요? 결국, 테스트는 데이터베이스와 불가분의 관계인 것처럼 보입니다.
 
 그럼 테스트는 결국 DB와 뗄래야 뗄 수 없는 존재일까요?
 
@@ -106,11 +105,11 @@ ElasticSearch와 같은 데이터베이스를 사용하는 경우, 우리는 어
 2. 주문이 어떻게 영속성 레이어에 저장되어야 할까? 
 3. 저장되기 위하여 Entity는 어떠한 구조로 설계할 것인지?
 
-이런 흐름은 결과적으로 데이터베이스가 필수적이라고 여겨지게 만듭니다. 하지만, 이것이 정말 최선일까요?
+이런 흐름은 결과적으로 **데이터베이스가 필수적**이라고 여겨지게 만듭니다. 하지만, 이것이 정말 최선일까요?
 
 <br/>
-제가 생각하기에, 이 접근 방식은 DB가 반드시 있어야 한다고 전제하는 문제점을 내포하고 있습니다. 
-이는 **`Layered Architecture가 데이터베이스 중심 설계를 유도하기 때문이라고 봅니다.`** 
+제가 생각하기에, 이 접근 방식은 **DB가 반드시 있어야 한다고 전제하는 문제점**을 내포하고 있습니다. 
+이는 **`Layered Architecture가 데이터베이스 중심 설계를 유도`**하기 때문이라고 봅니다.
 이 구조에서의 문제점을 간략히 정리하면 다음과 같습니다.
 <br/><br/>
 
@@ -122,11 +121,12 @@ ElasticSearch와 같은 데이터베이스를 사용하는 경우, 우리는 어
 | 동시 작업이 불가능 | Repository가 구현되지 않으면 Service 레이어를 구현하기 어려워, 개발의 병렬 처리가 힘들어집니다.           |
 | 도메인이 죽음    | 도메인 로직이 Service에 집중되어 있어, 전체 도메인 모델이 한눈에 들어오지 않습니다. 결국, Service가 모든 것을 해결해야 하므로 코드가 복잡해집니다.                           |
 
-**`즉 Service는 모든 일을 하는 신과같은 존재이기에 객체에 대한 진지한 고민을 하지 않게 되고, 객체지향이 아닌 절차지향적인 개발로 이루어질 수 있습니다.`**
+즉 Service는 모든 일을 하는 신과같은 존재이기에 객체에 대한 진지한 고민을 하지 않게 되고, **`객체지향이 아닌 절차지향적인 개발로 이루어질 수 있습니다.`**
 
 ![Untitled](https://killerwhale1125.github.io/assets/img/post/usecase.png)
+> 도메인과의 상호작용이 가장 중요하다.
 
-사실, 영속성 레이어를 고려하기 전에 도메인과의 상호작용을 먼저 생각하는 것이 더 적절하지 않을까요?
+사실, 영속성 레이어를 고려하기 전에 **도메인과의 상호작용을 먼저 생각하는 것**이 더 적절하지 않을까요?
 도메인 중심의 설계가 이루어지면, 데이터베이스는 그저 도메인 모델을 영속화하는 도구일 뿐, 비즈니스 로직을 주도하지 않습니다.<br/>
 <br/>
 이러한 문제점을 극복하여 좀 더 쉬운 테스트와 유연한 설계로 이뤄지기 위한 개선 방안을 아래부터 설명해보고자 합니다.
@@ -135,6 +135,7 @@ ElasticSearch와 같은 데이터베이스를 사용하는 경우, 우리는 어
 ## DIP를 통한 레이어 추상화 & 도메인과 Entity 분리를 통한 아키텍쳐 개선
 
 ![Untitled](https://killerwhale1125.github.io/assets/img/post/layered.png)
+> DIP 레이어 추상화 된 아키텍쳐
 
 <br/>
 우선, 위와 같이 개선된 아키텍처를 먼저 제시한 후, 변화된 부분을 설명하겠습니다.
@@ -147,7 +148,7 @@ ElasticSearch와 같은 데이터베이스를 사용하는 경우, 우리는 어
 
 <br/>
 
-**기존 아키텍쳐의 Test 코드**
+**개선 전 Test 코드**
 ```java
 @Test
 public void orderDetail() {
@@ -162,7 +163,7 @@ public void orderDetail() {
 }
 ```
 
-**개선된 아키텍쳐의 Test 코드**
+**개선 후 Test 코드**
 ```java
 @Test
 public void orderDetail() {
@@ -177,25 +178,31 @@ public void orderDetail() {
 }
 ```
 
-테스트 코드의 변화는 크지 않아 보이지만, 사실은 큰 차이가 있습니다. 
-Order가 OrderDomain으로 변화한 것뿐만 아니라, **@SpringBootTest를 사용하지 않고도 테스트를 실행할 수 있다는 점**이 가장 큰 변화입니다.
+![Untitled](https://killerwhale1125.github.io/assets/img/post/entity_domain.png)
 
-![Untitled](https://killerwhale1125.github.io/assets/img/post/springboot.png)
+| 기존 방식 (엔티티 사용) | 개선 방식 (도메인 객체 사용) |
+|----------------|----------------|
+| `Order` 엔티티 직접 사용 | `OrderDomain` 객체 사용 |
+| JPA, DB 의존 | Spring 없이 테스트 가능 |
+| @SpringBootTest 필수 | 일반 단위 테스트 가능 |
 
-### 실제 적용 사례
-제가 진행했던 프로젝트에서 헥사고날 아키텍처를 도입한 이후, 데이터베이스에 의존하지 않는 테스트를 작성함으로써 테스트 속도가 60% 이상 향상되었으며, 테스트 실패율도 크게 줄어들었습니다.  
-특히, 새로운 기능 개발 시 빠르게 Mock Repository를 생성하여 테스트 주도 개발(TDD)의 효율성을 극대화할 수 있었습니다.
+테스트 코드의 변화는 크지 않아 보이지만, 사실은 큰 차이가 있습니다.
+Order가 OrderDomain으로 변화한 것뿐만 아니라, **`외부 라이브러리를 사용하지 않고도 테스트가 가능하다는 것`**이 가장 큰 변화입니다.
 
 <br/>
 
-**테스트 시 서비스에서 순수 도메인 객체를 사용하면, DB 연결은 어떻게 해결하나요?**
+**테스트 시 서비스에서 순수 도메인 객체를 사용하면, DB 연결은 어떻게 해결할까?**
 
 기존에는 Spring Container를 띄워야만 Repository 의존성을 주입받아 DB에서 엔티티를 가져올 수 있었습니다.
 
 ![Untitled](https://killerwhale1125.github.io/assets/img/post/testrepository.png)
+> TestRepository Fake 객체를 사용하여 항상 일관된 데이터만 반환받는다.
 
 하지만 개선된 아키텍처에서는 Service 레이어가 순수 도메인 객체만 다루고, Repository 인터페이스에 의존하도록 변경되었습니다. 
 따라서 테스트 시, 실제 시스템에서 사용하는 Repository 구현체 대신, 테스트 전용 Repository 구현체를 만들어 도메인 객체를 반환하도록 확장할 수 있습니다.
+<br/>
+
+**예시 코드**
 
 ```java
 class TestOrderRepositoryImpl implements OrderRepository {
@@ -213,11 +220,102 @@ class TestOrderRepositoryImpl implements OrderRepository {
 }
 ```
 
+<br/>
+
 **개선된 아키텍쳐로서 얻은 이점**
 - Spring Boot를 실행할 필요가 없습니다.
 - H2와 같은 DB 연결이 필요 없습니다.
 - 항상 일관된 테스트 결과를 보장합니다.
 - 수백 개의 테스트를 수행해도 OOP 기반 테스트 덕분에 빠른 테스트 속도를 보장합니다.
+
+<br/>
+
+## 실제 적용 사례
+
+제가 최근 진행했던 팀프로젝트에서는 레이어드 아키텍쳐를 사용하였습니다. 아래는 그에 따른 테스트 코드의 예시입니다.
+
+**개선 전 모임 생성 테스트**
+
+```java
+@Test
+@DisplayName("책, 썸네일 이미지, 유저 정보를 통하여 챌린지와 모임을 생성한다.")
+@Transactional
+void create() {
+    /* given */
+    final String username = "범고래1";
+    final LocalDate startDate = LocalDate.now();
+    final LocalDate endDate = startDate.plusDays(10);
+    final GatheringCreate gatheringCreate =
+            getGatheringCreate("모임 제목", "모임장 소개", startDate, endDate, 10, 20, 1L, RECRUITING, ONE_HOUR, ONE_WEEK);
+    final TestMultipartFile file = getTestMultipartFile();
+    /* when */
+    Gathering gathering = gatheringService.create(gatheringCreate, List.of(file), username);
+
+    /* then */
+    // 모임 ( Gathering )
+    assertThat(gathering.getId()).isNotNull();
+    assertThat(gathering.getName()).isEqualTo("모임 제목");
+    ...이하 생략
+}
+```
+
+**개선 전 테스트 실행 결과**
+
+![Untitled](https://killerwhale1125.github.io/assets/img/post/test-result1.png){: width="500" height="50" .normal}
+
+- 테스트 시간 : 1sec 485ms (1.485초)
+- 사용된 외부 프로세스 - MySQL, Redis, AWS S3
+
+위 화면과 같이, 스프링을 띄우고 외부 라이브러리와 연결하여 테스트를 실행하는 모습을 볼 수 있습니다. 
+
+하지만 이러한 외부 의존성들을 Mock으로 대체하더라도 결국 DB와 의존성 주입을 위한 스프링 부트는 필수적으로 로드됩니다.
+
+<br/>
+
+**개선 후 모임 생성 테스트**
+
+```java
+@Test
+@DisplayName("책, 썸네일 이미지, 유저 정보를 통하여 챌린지와 모임을 생성한다.")
+void createGathering() {
+    /* given */
+    final String username = "범고래1";
+    final LocalDate startDate = LocalDate.now();
+    final LocalDate endDate = startDate.plusDays(10);
+    final GatheringCreate gatheringCreate =
+            getGatheringCreate("모임 제목", "모임장 소개", startDate, endDate, 10, 20, 1L, RECRUITING, ONE_HOUR, ONE_WEEK);
+    final TestMultipartFile file = getTestMultipartFile();
+
+    /* when */
+    final GatheringDomain gathering = gatheringService.create(gatheringCreate, List.of(file), username);
+
+    /* then */
+
+    // 모임 ( Gathering )
+    assertThat(gathering.getId()).isNotNull();
+    assertThat(gathering.getName()).isEqualTo("모임 제목");
+    ...이하 생략
+}
+```
+
+**개선 후 테스트 실행 결과**
+
+![Untitled](https://killerwhale1125.github.io/assets/img/post/test-result2.png)
+
+- 테스트 시간 : 114ms (0.114초)
+- 사용된 외부 프로세스 - 없음
+- [변경 사항] 의존성 주입 X -> Fake 객체
+- [변경 사항] Gathering(Entity) -> GatheringDomain(Domain)
+
+
+**개선 전/후 성능 비교**
+- 개선 전 : 1sec 485ms (1.485초) 
+- 개선 후 : 114ms (0.114초) **[92.32% 이상의 성능 단축]**
+
+외부 라이브러리와 의존성에서 벗어난 테스트를 작성함으로써, **테스트 속도가 92.32% 이상 단축**되었고, 테스트의 일관성 또한 보장되었습니다.
+
+특히 새로운 기능 개발 시 빠르게 Mock 객체를 생성하여 **테스트 주도 개발(TDD)**의 효율성을 극대화할 수 있었습니다.
+
 
 ## 헥사고날 아키텍쳐
 
@@ -227,11 +325,19 @@ class TestOrderRepositoryImpl implements OrderRepository {
 
 <br/>
 결론부터 바로 말씀드리자면 앞서 개선된 아키텍쳐가 곧 헥사고날 아키텍쳐의 형식과 동일합니다.
+
+이 아키텍처에서는 비즈니스 로직을 Domain, UseCase 에서 관리하며, 외부와의 상호작용을 Port와 Adapter를 통해 분리합니다.
+
+- Repository는 Infrastructure 계층에 위치하여 데이터베이스와의 직접적인 연결을 담당합니다.
+- Service와 Controller에서는 Port 인터페이스를 사용하여 Repository에 접근하므로, 구현체를 바꾸거나 테스트를 진행할 때도 비즈니스 로직을 변경할 필요 없이 유연하게 대체할 수 있습니다.
+
 <br/>
 
-**헥사고날 아키텍쳐 적용**
+**개선된 아키텍쳐를 헥사고날 아키텍쳐와 비교하기**
 
 ![Untitled](https://killerwhale1125.github.io/assets/img/post/hexagonalrefactor.png)
+
+![Untitled](https://killerwhale1125.github.io/assets/img/post/package-explain.png){: width="500" height="50" .normal}
 
 헥사고날 아키텍처는 애플리케이션의 핵심 비즈니스 로직을 외부 세계(사용자 인터페이스, 데이터베이스, 외부 시스템)와 분리합니다. 
 이는 도메인 중심 설계(DDD)와도 잘 맞아떨어지며, 유연하고 테스트 가능한 아키텍처를 구현할 수 있습니다.
@@ -243,11 +349,14 @@ class TestOrderRepositoryImpl implements OrderRepository {
 ![Untitled](https://killerwhale1125.github.io/assets/img/post/usecase-other.png)
 
 어떠한 스타트업에서 기존 Layered 아키텍쳐를 사용하여 JPA에 맞춰 설계를 진행했다고 가정해봅시다. 
-이 때 JPA는 더 이상 업데이트나 지원을 안하게 되어 다른 방식의 영속성 레이어를 구현해야 한다면 어떨까요?
-기존의 아키텍쳐를 사용한다면 영속성 레이어 뿐만 아니라 비즈니스 레이어마저 모든 코드를 뜯어 고쳐야 하는 상황이 발생합니다.
-하지만 헥사고날 아키텍쳐와 같이 외부의 Input, Ouput을 잘 분리하여 설계했다면 비즈니스 레이어는 변함이 없으며 영속성 레이어만 수정하면 되겠죠.
 
-또한 Spring을 안쓴다 해도 비즈니스 레이어는 전혀 변함이 없습니다.
+이 때 JPA는 더 이상 업데이트나 지원을 안하게 되어 다른 방식의 영속성 레이어를 구현해야 한다면 어떨까요?
+
+**Layered Architecture**
+- 영속성 레이어 뿐만 아니라 비즈니스 레이어마저 모든 코드를 수정해야한다.
+
+**Hexagonal Architecture**
+- 비즈니스 레이어는 변함이 없으며 영속성 레이어만 수정하면 된다.
 
 <br/>
 
@@ -263,18 +372,17 @@ class TestOrderRepositoryImpl implements OrderRepository {
 JPA에서는 엔티티를 영속성 컨텍스트에서 관리하며, Dirty Checking을 통해 엔티티의 변경 사항을 자동으로 감지하고 데이터베이스에 반영합니다. 
 그러나 헥사고날 아키텍처를 도입하면 이를 포기해야 하는 상황이 발생합니다.
 
-**`Dirty Checking 활성화`**
 ![Untitled](https://killerwhale1125.github.io/assets/img/post/dirty-checking.png)
-> 영속성 컨텍스트에서 관리하는 Entity를 수정하였기 때문에 Dirty Checking 발생
+> Dirty Checking 활성화 : 영속성 컨텍스트에서 관리하는 Entity를 수정하였기 때문에 Dirty Checking 발생
 
 <br/>
 도메인 객체를 다루지 않았더라면 기본적으로 JPA의 Dirty Checking 으로 인하여 자동으로 Update가 발생하였을 것 입니다.
 <br/>
 
-**`Dirty Checking 비활성화`**
 ![Untitled](https://killerwhale1125.github.io/assets/img/post/not-dirtychecking.png)
-> 도메인을 수정하였기 때문에 Dirty Checking 발생하지 않는다.
+> Dirty Checking 비활성화 : 도메인을 수정하였기 때문에 Dirty Checking 발생하지 않는다.
 
+<br/>
 헥사고날 아키텍처에서는 SRP(단일 책임 원칙)를 준수하기 위해 Repository가 데이터베이스 접근만을 담당합니다. 
 따라서 Repository에서 Service로 데이터를 전달할 때 Entity를 DTO로 변환해야 합니다.
 
@@ -299,7 +407,7 @@ public UserResponse update(UserUpdate userUpdate, MultipartFile file, String use
 JPA의 Dirty Checking을 사용할 수 있다면, 저장을 명시적으로 호출하지 않아 도 됩니다.
 
 
-Dirty Checking 비활성화의 장단점
+**Dirty Checking 비활성화의 장단점**
 - 단점
 수동으로 변경 사항을 저장해야 하므로 코드가 장황해지고 관리해야 할 부분이 증가합니다.
 
@@ -343,10 +451,10 @@ public void join(Long gatheringId, String userName) {
 }
 ```
 ![Untitled](https://killerwhale1125.github.io/assets/img/post/hex-save.png)
-> 헥사고날 아키텍쳐 도입 시 save 과정
+> 영속성 컨텍스트 Entity가 아닌 Domain List에 add한다.
 
 하지만 헥사고날 아키텍처를 도입하면, Service에서는 도메인 객체를 사용하고 Repository에서 이를 엔티티로 변환해야 합니다. 
-이 과정에서 영속성 컨텍스트에서 관리하지 않는 비영속 상태의 엔티티를 사용하기 때문에 Cascade 설정이 무효화됩니다.
+이 과정에서 **`영속성 컨텍스트에서 관리하지 않는 비영속 상태의 엔티티를 사용하기 때문에 Cascade 설정이 무효화`**됩니다.
 
 
 ```java
